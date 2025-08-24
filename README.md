@@ -9,7 +9,7 @@ The agent learns to land the lunar module safely using reinforcement learning.
 
 ## 🎥 The enhancement of the agent progress
 
-👉 [Watch Demo](media/video.mp4)
+👉 [Watch Demo](media/video.gif)
 
 ---
 
