@@ -15,10 +15,10 @@ The key idea is:
 ---
 
 ## 🎯 What This Project Does
-The agent is trained to solve an environment (e.g., **CartPole** or **LunarLander**).  
+The agent is trained to solve an environment (e.g., **LunarLander**).  
 Over episodes, it learns how to maximize its total reward.  
 
-▶️ Below you can watch a short video (`media/video.mp4`) showing how the agent improves from episode 0 up to episode 100.
+▶️ Below you can watch a short video (`media/video.mp4`) showing how the agent improves from episode 0 up to episode 1000.
 
 ---
 
@@ -29,12 +29,11 @@ During training, we track two important metrics:
 1. **Reward per Episode**  
    Shows how much reward the agent gets on average each episode.
 
-   ![Reward per Episode](media/reward.png)
 
 2. **Loss per Episode**  
    Measures how well the neural network is learning to approximate Q-values.
 
-   ![Loss per Episode](media/loss.png)
+   ![Loss per Episode](media/lossAndReward.png)
 
 ---
 
