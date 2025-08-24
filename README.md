@@ -1,7 +1,7 @@
 
 # 🚀 Deep Q-Network (DQN) for LunarLander-v3
 
-This project implements a **Deep Q-Network (DQN)** to solve the **LunarLander-v2** environment from OpenAI Gym.  
+This project implements a **Deep Q-Network (DQN)** to solve the **LunarLander-v3** environment from OpenAI Gym.  
 The agent learns to land the lunar module safely using reinforcement learning.
 
 ---
