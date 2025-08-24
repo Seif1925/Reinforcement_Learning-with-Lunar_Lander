@@ -33,7 +33,7 @@ During training, we track two important metrics:
 2. **Loss per Episode**  
    Measures how well the neural network is learning to approximate Q-values.
 
-   ![Loss per Episode](media/lossAndReward.png)
+   ![Loss per Episode](media/lossAndReward.jpg)
 
 ---
 
