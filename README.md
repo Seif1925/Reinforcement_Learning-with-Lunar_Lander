@@ -1,145 +1,125 @@
 
-# 🚀 Deep Q-Network (DQN) for LunarLander-v3
+# Deep Q-Network (DQN)
 
-This project implements a **Deep Q-Network (DQN)** using **PyTorch** and **Gymnasium** to solve the **LunarLander-v3** environment.  
-The agent learns to land a lunar module safely by interacting with the environment, storing past experiences, and updating its neural network.
+## 📌 Introduction
+This project demonstrates the **Deep Q-Network (DQN)** algorithm, one of the foundational algorithms in **Deep Reinforcement Learning**.  
+DQN was introduced by DeepMind to teach agents how to act optimally in an environment using **neural networks** to approximate the Q-value function.
+
+The key idea is:
+- The agent interacts with the environment.
+- It collects experiences `(state, action, reward, next_state, done)`.
+- These experiences are stored in a **Replay Buffer**.
+- A **neural network** predicts the Q-values for each action.
+- The agent updates its knowledge using the **Bellman equation**.
 
 ---
 
-## 📌 1. Setup
+## 🎯 What This Project Does
+The agent is trained to solve an environment (e.g., **CartPole** or **LunarLander**).  
+Over episodes, it learns how to maximize its total reward.  
 
+▶️ Below you can watch a short video (`media/video.mp4`) showing how the agent improves from episode 0 up to episode 100.
+
+---
+
+## 📊 Training Results
+
+During training, we track two important metrics:
+
+1. **Reward per Episode**  
+   Shows how much reward the agent gets on average each episode.
+
+   ![Reward per Episode](media/reward.png)
+
+2. **Loss per Episode**  
+   Measures how well the neural network is learning to approximate Q-values.
+
+   ![Loss per Episode](media/loss.png)
+
+---
+
+## 🧠 Key Concepts & Functions
+
+Here are some of the **main functions** in the DQN code, explained step by step in *Jupyter-like cells*.
+
+### 🔹 Soft Update
 ```python
-import matplotlib.pyplot as plt
-import gymnasium as gym
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-from collections import deque
-import numpy as np
-import random
-import os
-
-device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-print(f"Device set to: {device}")
+def soft_update(local_model, target_model, tau):
+    for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
+        target_param.data.copy_(tau*local_param.data + (1.0-tau)*target_param.data)
 ```
+**Explanation:**  
+- Ensures the **target network** slowly follows the **local network**.  
+- Helps stabilize training.  
+- `tau` controls the update speed (e.g., `0.001`).
 
 ---
 
-## 📌 2. Hyperparameters
-
+### 🔹 Epsilon-Greedy Action Selection
 ```python
-REPLAY_MEMORY_SIZE = 100_000
-EPSILON_DECAY = 0.995
-MIN_EPSILON = 0.01
-EPISODES = 1_000
-DISCOUNT = 0.99
-MINI_BATCH_SIZE = 100
-INTERPOLATION_PARAMETER = 1e-3  
-TRAIN_FREQUENCY = 4  
-LEARNING_RATE = 5e-4  
+def act(self, state, eps=0.1):
+    if random.random() > eps:
+        with torch.no_grad():
+            q_values = self.qnetwork_local(state)
+        return np.argmax(q_values.cpu().data.numpy())
+    else:
+        return random.choice(np.arange(self.action_size))
 ```
-
-- `TRAIN_FREQUENCY = 4` → Train every 4 steps (not every step) to improve stability.  
-- `EPSILON_DECAY` → Controls how quickly the agent shifts from exploration to exploitation.  
-- `INTERPOLATION_PARAMETER` → Factor for **soft updating** the target network.  
+**Explanation:**  
+- With probability **1 - eps** → choose the **best action**.  
+- With probability **eps** → choose a **random action**.  
+- This balances **exploration** and **exploitation**.
 
 ---
 
-## 📌 3. The Q-Network
-
-A **neural network** approximates Q-values for each action.  
-
+### 🔹 Replay Buffer
 ```python
-class DQNNetwork(nn.Module):
-    def __init__(self, state_size, action_size, seed=42):
-        super(DQNNetwork, self).__init__()
-        self.seed = torch.manual_seed(seed)
-        self.fc1 = nn.Linear(state_size, 64)
-        self.fc2 = nn.Linear(64, 64)
-        self.fc3 = nn.Linear(64, action_size)
-        
-    def forward(self, x):
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
+class ReplayBuffer:
+    def __init__(self, buffer_size, batch_size):
+        self.memory = deque(maxlen=buffer_size)
+        self.batch_size = batch_size
+
+    def add(self, state, action, reward, next_state, done):
+        self.memory.append((state, action, reward, next_state, done))
+
+    def sample(self):
+        return random.sample(self.memory, k=self.batch_size)
+```
+**Explanation:**  
+- Stores past experiences.  
+- Sampling random minibatches breaks correlation and improves learning stability.
+
+---
+
+## 📂 Project Structure
+```
+project/
+│── main.py            # Training script
+│── dqn_agent.py       # DQN agent implementation
+│── model.py           # Neural network model
+│── media/
+│   ├── reward.png     # Reward per episode plot
+│   ├── loss.png       # Loss per episode plot
+│   └── video.mp4      # Training progress video
+│── README.md          # This file
 ```
 
 ---
 
-## 📌 4. The Agent
-
-The agent manages training, memory, and action selection.  
-
-```python
-class DQNAgent:
-    def __init__(self):
-        self.model = DQNNetwork(state_shape, num_actions).to(device)
-        self.target_model = DQNNetwork(state_shape, num_actions).to(device)
-        self.target_model.load_state_dict(self.model.state_dict())
-        
-        self.optimizer = optim.Adam(self.model.parameters(), lr=LEARNING_RATE)
-        self.replay_memory = deque(maxlen=REPLAY_MEMORY_SIZE)
-        self.t_step = 0
-        self.losses = []
-    
-    def train(self, done):
-        # Train every few steps to improve stability
-        self.t_step = (self.t_step + 1) % TRAIN_FREQUENCY
-        if self.t_step != 0:
-            return
-        ...
-```
+## 🚀 How to Run
+1. Install dependencies:
+   ```bash
+   pip install torch numpy matplotlib gym
+   ```
+2. Train the agent:
+   ```bash
+   python main.py
+   ```
+3. View results in the `media/` folder.
 
 ---
 
-## 📌 5. Training Loop
-
-```python
-for episode in range(EPISODES):
-    current_state, _ = env.reset()
-    total_reward = 0
-    done = False
-    
-    while not done:
-        action = agent.act(current_state, epsilon)
-        new_state, reward, terminated, truncated, _ = env.step(action)
-        done = terminated or truncated
-        
-        agent.update_replay_memory((current_state, action, reward, new_state, done))
-        agent.train(done)
-        
-        current_state = new_state
-        total_reward += reward
-```
+## 📺 Training Video
+👉 [Watch Training Progress](media/video.mp4)
 
 ---
-
-## 📌 6. Visualization
-
-```python
-# Plot rewards
-plt.plot(episode_rewards, color='blue', alpha=0.7)
-plt.xlabel("Episode")
-plt.ylabel("Total Reward")
-plt.title("Rewards per Episode")
-plt.show()
-```
-
----
-
-## 📦 Outputs
-
-- `videos/` → contains recorded gameplay episodes  
-- `dqn_lunarlander_model.pth` → saved PyTorch model weights  
-- Training plots for rewards and losses  
-
----
-
-## 🚀 Run
-
-```bash
-pip install torch gymnasium[box2d] matplotlib numpy
-python dqn_lunarlander.py
-```
