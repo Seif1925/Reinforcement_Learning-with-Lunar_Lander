@@ -1,124 +1,133 @@
 
-# Solving Lunar Lander environment using Standard Deep Q-Network (DQN)
+# 🚀 Deep Q-Network (DQN) for LunarLander-v3
 
-## 📌 Introduction
-This project demonstrates the **Deep Q-Network (DQN)** algorithm, one of the foundational algorithms in **Deep Reinforcement Learning**.  
-DQN was introduced by DeepMind to teach agents how to act optimally in an environment using **neural networks** to approximate the Q-value function.
-
-The key idea is:
-- The agent interacts with the environment.
-- It collects experiences `(state, action, reward, next_state, done)`.
-- These experiences are stored in a **Replay Buffer**.
-- A **neural network** predicts the Q-values for each action.
-- The agent updates its knowledge using the **Bellman equation**.
+This project implements a **Deep Q-Network (DQN)** to solve the **LunarLander-v2** environment from OpenAI Gym.  
+The agent learns to land the lunar module safely using reinforcement learning.
 
 ---
 
-## 🎯 What This Project Does
-The agent is trained to solve an environment (e.g., **LunarLander**).  
-Over episodes, it learns how to maximize its total reward.  
+## 📌 Concept
 
-▶️ Below you can watch a short video (`media/video.mp4`) showing how the agent improves from episode 0 up to episode 1000.
-
----
-
-## 📊 Training Results
-
-During training, we track two important metrics:
-
-1. **Reward per Episode**  
-   Shows how much reward the agent gets on average each episode.
-
-
-2. **Loss per Episode**  
-   Measures how well the neural network is learning to approximate Q-values.
-
-   ![Loss per Episode](media/LossAndReward.jpg)
+The **main idea** behind DQN is to combine:
+1. **Q-Learning** → estimating the value of actions given states.  
+2. **Deep Neural Networks** → to approximate the Q-function.  
+3. **Experience Replay** → storing past experiences in a buffer to sample from them randomly, which breaks correlation and improves learning.  
+4. **Target Network** → a fixed copy of the Q-network that is updated slowly (soft update) for more stable training.
 
 ---
 
-## 🧠 Key Concepts & Functions
+## 🏗️ Network Architecture
 
-Here are some of the **main functions** in the DQN code, explained step by step in *Jupyter-like cells*.
+The **DQN** uses a simple **feedforward neural network** with 2 hidden layers:
 
-### 🔹 Soft Update
+- **Input Layer** → takes the state (8 values in LunarLander).  
+- **Hidden Layer 1** → 64 neurons, ReLU activation.  
+- **Hidden Layer 2** → 64 neurons, ReLU activation.  
+- **Output Layer** → number of possible actions (4 in LunarLander).  
+
+```python
+class DQNNetwork(nn.Module):
+    def __init__(self, state_size, action_size, seed=42):
+        super(DQNNetwork, self).__init__()
+        self.seed = torch.manual_seed(seed)
+        self.fc1 = nn.Linear(state_size, 64)
+        self.fc2 = nn.Linear(64, 64)
+        self.fc3 = nn.Linear(64, action_size)
+        
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        return self.fc3(x)
+```
+
+---
+
+## ⚙️ Hyperparameters
+
+| Hyperparameter        | Value        | Description |
+|-----------------------|-------------|-------------|
+| Replay Buffer Size    | `100,000`   | Maximum number of past experiences stored |
+| Batch Size            | `100`       | Number of samples per training step |
+| Discount Factor (γ)   | `0.99`      | How much future rewards are valued |
+| Learning Rate (α)     | `5e-4`      | Step size for optimizer |
+| Update Frequency      | `4` steps   | How often the network is updated |
+| Soft Update (τ)       | `1e-3`      | Rate of slowly updating target network |
+
+---
+
+## 🔑 Important Functions
+
+### 1. Soft Update (stabilizing training)
+The **soft update** ensures that the target network is updated slowly towards the local network, which avoids large fluctuations.
+
 ```python
 def soft_update(local_model, target_model, tau):
     for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
         target_param.data.copy_(tau*local_param.data + (1.0-tau)*target_param.data)
 ```
-**Explanation:**  
-- Ensures the **target network** slowly follows the **local network**.  
-- Helps stabilize training.  
-- `tau` controls the update speed (e.g., `0.001`).
+
+➡️ **Explanation**:  
+- `tau` is a small number (e.g., `1e-3`).  
+- Instead of replacing the weights completely, we blend them:  
+  `θ_target ← τ*θ_local + (1-τ)*θ_target`  
 
 ---
 
-### 🔹 Epsilon-Greedy Action Selection
+### 2. Learning Step (update rule)
+The **learning step** samples from the replay buffer and updates the Q-values.
+
 ```python
-def act(self, state, eps=0.1):
-    if random.random() > eps:
-        with torch.no_grad():
-            q_values = self.qnetwork_local(state)
-        return np.argmax(q_values.cpu().data.numpy())
-    else:
-        return random.choice(np.arange(self.action_size))
+def learn(experiences, gamma):
+    states, actions, rewards, next_states, dones = experiences
+
+    Q_targets_next = target_model(next_states).detach().max(1)[0].unsqueeze(1)
+    Q_targets = rewards + (gamma * Q_targets_next * (1 - dones))
+
+    Q_expected = local_model(states).gather(1, actions)
+
+    loss = F.mse_loss(Q_expected, Q_targets)
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
 ```
-**Explanation:**  
-- With probability **1 - eps** → choose the **best action**.  
-- With probability **eps** → choose a **random action**.  
-- This balances **exploration** and **exploitation**.
+
+➡️ **Explanation**:  
+- `Q_expected` = predicted Q-values.  
+- `Q_targets` = actual Q-values using target network.  
+- Minimize **MSE loss** between them.
 
 ---
 
-### 🔹 Replay Buffer
-```python
-class ReplayBuffer:
-    def __init__(self, buffer_size, batch_size):
-        self.memory = deque(maxlen=buffer_size)
-        self.batch_size = batch_size
+## 📊 Training Results
 
-    def add(self, state, action, reward, next_state, done):
-        self.memory.append((state, action, reward, next_state, done))
+- **Learning Curve**: Below is the **loss and reward per episode**.  
+- The agent learns to land successfully after enough episodes.
 
-    def sample(self):
-        return random.sample(self.memory, k=self.batch_size)
-```
-**Explanation:**  
-- Stores past experiences.  
-- Sampling random minibatches breaks correlation and improves learning stability.
+![Training Curve](training_curve.png)
 
 ---
 
-## 📂 Project Structure
-```
-project/
-│── main.py            # Training script
-│── dqn_agent.py       # DQN agent implementation
-│── model.py           # Neural network model
-│── media/
-│   ├── reward.png     # Reward per episode plot
-│   ├── loss.png       # Loss per episode plot
-│   └── video.mp4      # Training progress video
-│── README.md          # This file
+## 🎥 Demo
+
+Here is a video showing the trained agent in action:  
+
+👉 [Watch Demo](https://www.youtube.com/watch?v=4a8Y2Z6jH6M)
+
+---
+
+## 📌 How to Run
+
+```bash
+pip install -r requirements.txt
+python main.py
 ```
 
 ---
 
-## 🚀 How to Run
-1. Install dependencies:
-   ```bash
-   pip install torch numpy matplotlib gym
-   ```
-2. Train the agent:
-   ```bash
-   python main.py
-   ```
-3. View results in the `media/` folder.
+## ✅ Summary
 
----
-
-## 📺 Training Video
-👉 [Watch Training Progress](media/video.mp4)
+- DQN learns by combining **neural networks, replay buffer, and target network**.  
+- **Soft update** stabilizes training.  
+- The agent improves gradually as shown in the reward curve and demo video.
 
 ---
