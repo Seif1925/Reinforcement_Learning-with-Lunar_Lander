@@ -101,9 +101,9 @@ def learn(experiences, gamma):
 ## 📊 Training Results
 
 - **Learning Curve**: Below is the **loss and reward per episode**.  
-- The agent learns to land successfully after enough episodes.
+- The agent learns to land successfully after 400 episode.
 
-![Training Curve](training_curve.png)
+![Training Curve](media/LossAndReward.jpg)
 
 ---
 
