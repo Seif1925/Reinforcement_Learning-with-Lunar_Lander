@@ -1,5 +1,5 @@
 
-# Deep Q-Network (DQN)
+# Solving Lunar Lander environment using Standard Deep Q-Network (DQN)
 
 ## 📌 Introduction
 This project demonstrates the **Deep Q-Network (DQN)** algorithm, one of the foundational algorithms in **Deep Reinforcement Learning**.  
