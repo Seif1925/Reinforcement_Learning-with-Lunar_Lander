@@ -6,6 +6,16 @@ The agent learns to land the lunar module safely using reinforcement learning.
 
 ---
 
+
+## 🎥 Demo
+
+Here is a video showing the enhancement of the agent progress:  
+
+👉 [Watch Demo](media/video.mp4)
+
+---
+
+
 ## 📌 Concept
 
 The **main idea** behind DQN is to combine:
@@ -107,13 +117,6 @@ def learn(experiences, gamma):
 
 ---
 
-## 🎥 Demo
-
-Here is a video showing the trained agent in action:  
-
-👉 [Watch Demo](https://www.youtube.com/watch?v=4a8Y2Z6jH6M)
-
----
 
 ## 📌 How to Run
 
