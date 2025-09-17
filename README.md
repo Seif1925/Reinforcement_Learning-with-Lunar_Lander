@@ -118,6 +118,7 @@ def learn(experiences, gamma):
 ## 📌 How to Run
 
 ```bash
+sudo apt-get install swig
 pip install -r requirements.txt
 python main.py
 ```
